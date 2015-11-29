@@ -32,6 +32,10 @@ SOURCES		:=	source
 DATA		:=	data
 INCLUDES	:=	include
 
+APP_TITLE	:=	Update Suppressor
+APP_DESCRIPTION	:=      Temporally suppresses the 3ds update nag.
+APP_AUTHOR	:=      Giantblargg
+
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
