@@ -33,7 +33,7 @@ DATA		:=	data
 INCLUDES	:=	include
 
 APP_TITLE	:=	Update Suppressor
-APP_DESCRIPTION	:=      Temporally suppresses the 3ds update nag.
+APP_DESCRIPTION	:=      Temporarily suppresses the 3ds update nag.
 APP_AUTHOR	:=      Giantblargg
 
 #---------------------------------------------------------------------------------
