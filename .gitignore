@@ -1,0 +1,8 @@
+*.3dsx
+*.elf
+*.smdh
+Thumbs.db
+build/
+.project
+.cproject
+.settings/
