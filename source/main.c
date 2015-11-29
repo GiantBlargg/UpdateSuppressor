@@ -1,19 +1,30 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <3ds.h>
 
-void confirm() {
+int confirm() {
+	while (aptMainLoop()) {
+		hidScanInput();
+		gspWaitForVBlank();
+
+		u32 kDown = hidKeysDown();
+		if (!(kDown & (KEY_A | KEY_B)))
+			break;
+	}
 	while (aptMainLoop()) {
 		hidScanInput();
 		gspWaitForVBlank();
 
 		u32 kDown = hidKeysDown();
 		if (kDown & KEY_A)
-			break;
+			return true;
+		if (kDown & KEY_B)
+			return false;
 	}
-	return;
+	return false;
 }
 
 Result getFile(u8 ** buffer, u64 * size) {
@@ -76,6 +87,11 @@ int main() {
 
 	printf("Update Suppressor\n");
 
+	int halt = (access("halt", F_OK) != -1);
+
+	if (halt)
+		printf("Halting: Always halt\n");
+
 	u64 tid = 0;
 
 	aptOpenSession();
@@ -94,11 +110,7 @@ int main() {
 	Result ret = getFile(&u8file, &size);
 	if (ret != 0) {
 		printf("Error Reading: %X\n", (unsigned int) ret);
-
-		confirm();
-
-		gfxExit();
-		return 0;
+		halt = true;
 	} else {
 
 		u64 *file = (u64 *) u8file;
@@ -116,13 +128,23 @@ int main() {
 
 		if (entry * 0x10 >= size) {
 			printf("Version record not found.\n");
+			halt = true;
 		} else {
-
 			printf("Version record found at entry %X.\n",
 					(unsigned int) (entry & 0xFFFFFFFF));
 
 			gfxFlushBuffers();
 			gfxSwapBuffers();
+
+			if (halt) {
+				printf("Do you want to remove this record?(A/B)\n");
+				gfxFlushBuffers();
+				gfxSwapBuffers();
+				if (confirm() == false) {
+					gfxExit();
+					return 0;
+				}
+			}
 
 			file[entry * 0x2] = 0x0;
 
@@ -130,17 +152,18 @@ int main() {
 
 			if (ret != 0) {
 				printf("Error Writing: %X\n", (unsigned int) ret);
+				halt = true;
 			} else {
 				printf("Version record removed.\n");
 			}
-
 		}
 	}
 
 	gfxFlushBuffers();
 	gfxSwapBuffers();
 
-	confirm();
+	if (halt)
+		confirm();
 
 	gfxExit();
 	return 0;
