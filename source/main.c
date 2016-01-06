@@ -85,7 +85,7 @@ int main() {
 	gfxInitDefault();
 	consoleInit(GFX_BOTTOM, NULL);
 
-	printf("Update Suppressor\n");
+	printf("Update Suppressor %s\n", VERSION);
 
 	int halt = (access("halt", F_OK) != -1);
 

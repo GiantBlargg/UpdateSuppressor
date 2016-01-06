@@ -33,8 +33,10 @@ DATA		:=	data
 INCLUDES	:=	include
 
 APP_TITLE	:=	Update Suppressor
-APP_DESCRIPTION	:=      Temporarily suppresses the 3ds update nag.
-APP_AUTHOR	:=      Giantblargg
+APP_DESCRIPTION	:=	Temporarily suppresses the 3ds update nag.
+APP_AUTHOR	:=	Giantblargg
+
+VERSION		:=	v0.1.2
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -46,6 +48,8 @@ CFLAGS	:=	-g -Wall -O2 -mword-relocations \
 			$(ARCH)
 
 CFLAGS	+=	$(INCLUDE) -DARM11 -D_3DS
+
+CFLAGS	+=	-D VERSION="\"$(VERSION)\""
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
@@ -121,7 +125,7 @@ ifeq ($(strip $(NO_SMDH)),)
 	export _3DSXFLAGS += --smdh=$(CURDIR)/$(TARGET).smdh
 endif
 
-.PHONY: $(BUILD) clean all
+.PHONY: $(BUILD) clean all deploy
 
 #---------------------------------------------------------------------------------
 all: $(BUILD)
@@ -130,8 +134,10 @@ $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 	
-deploy:
-	@zip -FS $(OUTPUT).zip *.3dsx *.smdh *.xml README.md
+deploy:	$(BUILD)
+	@mkdir $(BUILD)/$(TARGET)
+	@cp *.3dsx *.smdh *.xml README.md -t $(BUILD)/$(TARGET)
+	@cd $(BUILD) && zip -rFS $(OUTPUT).zip $(TARGET)
 	
 
 #---------------------------------------------------------------------------------
