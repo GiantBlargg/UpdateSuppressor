@@ -135,6 +135,7 @@ $(BUILD):
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 	
 deploy:	$(BUILD)
+	@rm -fr $(BUILD)/$(TARGET)
 	@mkdir $(BUILD)/$(TARGET)
 	@cp *.3dsx *.smdh *.xml README.md -t $(BUILD)/$(TARGET)
 	@cd $(BUILD) && zip -rFS $(OUTPUT).zip $(TARGET)
