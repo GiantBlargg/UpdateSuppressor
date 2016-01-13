@@ -36,12 +36,12 @@ APP_TITLE	:=	Update Suppressor
 APP_DESCRIPTION	:=	Temporarily suppresses the 3ds update nag.
 APP_AUTHOR	:=	Giantblargg
 
-VERSION		:=	v0.1.2
+VERSION		:=	v0.1.3-dev
 
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-march=armv6k -mtune=mpcore -mfloat-abi=hard
+ARCH	:=	-march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft
 
 CFLAGS	:=	-g -Wall -O2 -mword-relocations \
 			-fomit-frame-pointer -ffast-math \
