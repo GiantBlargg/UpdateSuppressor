@@ -1,5 +1,5 @@
 # UpdateSuppressor
-Temporally suppresses the 3ds update nag.
+Temporarily suppresses the 3ds update nag.
 
 Pick the app who's update you want blocked using the HBmenu title selector.
 
