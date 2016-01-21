@@ -7,3 +7,4 @@ build/
 .cproject
 .settings/
 /UpdateSuppressor.zip
+*.cia

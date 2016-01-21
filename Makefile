@@ -36,7 +36,16 @@ APP_TITLE	:=	Update Suppressor
 APP_DESCRIPTION	:=	Temporarily suppresses the 3ds update nag.
 APP_AUTHOR	:=	Giantblargg
 
-VERSION		:=	v0.2-dev
+MAJOR_VER	:=	0
+MINOR_VER	:=	2
+MICRO_VER	:=	0
+VER_TAG		:=	dev
+VERSION		:=	v$(MAJOR_VER).$(MINOR_VER).$(MICRO_VER)
+
+ifneq ($(VER_TAG),)
+	VERSION	+=	-$(VER_TAG)
+endif
+
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -125,7 +134,7 @@ ifeq ($(strip $(NO_SMDH)),)
 	export _3DSXFLAGS += --smdh=$(CURDIR)/$(TARGET).smdh
 endif
 
-.PHONY: $(BUILD) clean all deploy
+.PHONY: $(BUILD) clean all zip
 
 #---------------------------------------------------------------------------------
 all: $(BUILD)
@@ -133,8 +142,10 @@ all: $(BUILD)
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
-	
-deploy:	$(BUILD)
+
+zip	: $(OUTPUT).zip
+
+$(OUTPUT).zip:	$(BUILD)
 	@rm -fr $(BUILD)/$(TARGET)
 	@mkdir $(BUILD)/$(TARGET)
 	@cp *.3dsx *.smdh *.xml README.md -t $(BUILD)/$(TARGET)
@@ -144,7 +155,7 @@ deploy:	$(BUILD)
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf $(TARGET).zip
+	@rm -fr $(BUILD) $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf $(TARGET).zip $(TARGET).cia
 
 
 #---------------------------------------------------------------------------------
@@ -152,9 +163,12 @@ else
 
 DEPENDS	:=	$(OFILES:.o=.d)
 
+.PHONY: all
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
+all	: $(OUTPUT).3dsx $(OUTPUT).cia
+
 ifeq ($(strip $(NO_SMDH)),)
 $(OUTPUT).3dsx	:	$(OUTPUT).elf $(OUTPUT).smdh
 else
@@ -162,6 +176,17 @@ $(OUTPUT).3dsx	:	$(OUTPUT).elf
 endif
 
 $(OUTPUT).elf	:	$(OFILES)
+
+#---------------------------------------------------------------------------------
+%.cia	:	$(TOPDIR)/cia.rsf %.elf %.icn banner.bnr
+	makerom -f cia -o $@ -rsf $(TOPDIR)/cia.rsf -DAPP_TITLE="$(APP_TITLE)" -target t -exefslogo -elf $*.elf -icon $*.icn -banner banner.bnr -major $(MAJOR_VER) -minor $(MINOR_VER) -micro $(MICRO_VER)
+	@echo built ... $(notdir $@)
+
+%.icn	:	$(APP_ICON)
+	@bannertool makesmdh -i "$(APP_ICON)" -o "$@" -s "$(APP_TITLE)" -l "$(APP_TITLE)" -p "$(APP_AUTHOR)"
+
+%.bnr	:	$(TOPDIR)/%.png	$(TOPDIR)/%.wav
+	bannertool makebanner -i $(TOPDIR)/$*.png -a $(TOPDIR)/$*.wav -o $@
 
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data
