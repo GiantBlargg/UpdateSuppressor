@@ -4,6 +4,14 @@
 
 #include <3ds.h>
 
+#define ENTRY_SIZE 0x10
+
+enum Mode {
+	MODE_SINGLE, MODE_ALL, MODE_FILE //Not implemented
+};
+
+enum Mode mode;
+
 int debug;
 
 int confirm() {
@@ -34,8 +42,9 @@ FS_Path verListPath;
 
 Result initFS() {
 	u32 extdata_archive_lowpathdata[3] = { MEDIATYPE_NAND, 0xf000000e, 0 };
-	extdata_archive = (FS_Archive ) { ARCHIVE_SHARED_EXTDATA, (FS_Path ) {
-						PATH_BINARY, 0xC, (u8*) extdata_archive_lowpathdata } };
+	extdata_archive = (FS_Archive ) { ARCHIVE_SHARED_EXTDATA,
+					(FS_Path ) { PATH_BINARY, 0xC,
+									(u8*) extdata_archive_lowpathdata } };
 
 	verListPath = fsMakePath(PATH_ASCII, "/versionList.dat");
 
@@ -48,7 +57,7 @@ Result getFile(u8 ** buffer, u64 * size) {
 	u32 tmpval = 0;
 
 	ret = FSUSER_OpenFile(&filehandle, extdata_archive, verListPath,
-		FS_OPEN_READ, 0);
+			FS_OPEN_READ, 0);
 	if (ret != 0)
 		return ret;
 
@@ -56,8 +65,17 @@ Result getFile(u8 ** buffer, u64 * size) {
 	if (ret != 0)
 		return ret;
 
+	if (*size <= ENTRY_SIZE) {
+		*size = 0;
+		return ret;
+	}
+
+	if (mode == MODE_ALL)
+		*size = ENTRY_SIZE;
+
 	*buffer = malloc(*size);
 	ret = FSFILE_Read(filehandle, &tmpval, 0, *buffer, *size);
+
 	if (ret != 0)
 		return ret;
 
@@ -77,7 +95,7 @@ Result putFile(u8 * buffer, u64 size) {
 		return ret;
 
 	ret = FSUSER_OpenFile(&filehandle, extdata_archive, verListPath,
-		FS_OPEN_WRITE, 0);
+			FS_OPEN_WRITE, 0);
 	if (ret != 0)
 		return ret;
 
@@ -87,6 +105,52 @@ Result putFile(u8 * buffer, u64 size) {
 	return ret;
 }
 
+void setModes(void) {
+	mode = (access("UpdateSuppressor.xml", F_OK) != -1) ?
+			MODE_SINGLE : MODE_ALL;
+
+	debug = (access("debug", F_OK) != -1);
+}
+
+int deleteEntry(u64 PID, u8 * buffer, u64 size) {
+	u64 *file = (u64 *) buffer;
+
+	u64 entry = 0;
+	while (true) {
+
+		if (file[entry * 0x2] == PID)
+			break;
+
+		entry++;
+		if (entry * ENTRY_SIZE >= size)
+			break;
+	}
+
+	if (entry * ENTRY_SIZE >= size) {
+		printf("Version record not found.\n");
+		debug = true;
+		return 2;
+	} else {
+		printf("Version record found at entry %X.\n",
+				(unsigned int) (entry & 0xFFFFFFFF));
+
+		gfxFlushBuffers();
+		gfxSwapBuffers();
+
+		if (debug) {
+			printf("Do you want to remove this record?(A/B)\n");
+			gfxFlushBuffers();
+			gfxSwapBuffers();
+			if (confirm() == false) {
+				return 1;
+			}
+		}
+
+		file[entry * 0x2] = 0x0;
+	}
+	return 0;
+}
+
 int main() {
 
 	gfxInitDefault();
@@ -94,19 +158,35 @@ int main() {
 
 	printf("Update Suppressor %s\n", VERSION);
 
-	debug = (access("halt", F_OK) != -1);
+	setModes();
 
 	if (debug)
 		printf("Debug Mode\n");
 
+	switch (mode) {
+	case MODE_SINGLE:
+		puts("Single Mode");
+		break;
+	case MODE_ALL:
+		puts("All Mode");
+		break;
+	case MODE_FILE:
+		puts("Not Implemented: File Mode");
+		break;
+	default:
+		puts("wtf? Unknown Mode");
+		break;
+	}
+
 	u64 PID = 0;
+	if (mode == MODE_SINGLE) {
+		aptOpenSession();
+		APT_GetProgramID(&PID);
+		aptCloseSession();
 
-	aptOpenSession();
-	APT_GetProgramID(&PID);
-	aptCloseSession();
-
-	printf("Title Id: %08X%08X\n", (unsigned int) (PID >> 32),
-		(unsigned int) (PID & 0xFFFFFFFF));
+		printf("Title Id: %08X%08X\n", (unsigned int) (PID >> 32),
+				(unsigned int) (PID & 0xFFFFFFFF));
+	}
 
 	gfxFlushBuffers();
 	gfxSwapBuffers();
@@ -124,43 +204,29 @@ int main() {
 		if (ret != 0) {
 			printf("Error Reading: %li\n", ret);
 			debug = true;
+		} else if (size == 0) {
+			puts("File already cleared");
+			debug = true;
 		} else {
 
-			u64 *file = (u64 *) u8file;
+			if (mode != MODE_ALL) {
 
-			u64 entry = 0;
-			while (true) {
-
-				if (file[entry * 0x2] == PID)
-					break;
-
-				entry++;
-				if (entry * 0x10 >= size)
-					break;
-			}
-
-			if (entry * 0x10 >= size) {
-				printf("Version record not found.\n");
-				debug = true;
-			} else {
-				printf("Version record found at entry %X.\n",
-					(unsigned int) (entry & 0xFFFFFFFF));
-
+				ret = (Result) deleteEntry(PID, u8file, size);
+			} else if (debug) {
+				printf("Do you want to remove the list?(A/B)\n");
 				gfxFlushBuffers();
 				gfxSwapBuffers();
-
-				if (debug) {
-					printf("Do you want to remove this record?(A/B)\n");
-					gfxFlushBuffers();
-					gfxSwapBuffers();
-					if (confirm() == false) {
-						gfxExit();
-						return 0;
-					}
+				if (confirm() == false) {
+					ret = 1;
 				}
+			}
 
-				file[entry * 0x2] = 0x0;
+			if (ret == 1) {
+				gfxExit();
+				return 0;
+			}
 
+			if (ret == 0) {
 				ret = putFile(u8file, size);
 
 				if (ret != 0) {

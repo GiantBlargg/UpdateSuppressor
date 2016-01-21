@@ -36,7 +36,7 @@ APP_TITLE	:=	Update Suppressor
 APP_DESCRIPTION	:=	Temporarily suppresses the 3ds update nag.
 APP_AUTHOR	:=	Giantblargg
 
-VERSION		:=	v0.1.3-dev
+VERSION		:=	v0.2-dev
 
 #---------------------------------------------------------------------------------
 # options for code generation
