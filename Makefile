@@ -137,15 +137,15 @@ endif
 .PHONY: $(BUILD) clean all zip
 
 #---------------------------------------------------------------------------------
-all: $(BUILD)
+all: $(BUILD) zip
 
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
-zip	: $(OUTPUT).zip
+zip	: $(OUTPUT)-3dsx.zip
 
-$(OUTPUT).zip:	$(BUILD)
+$(OUTPUT)-3dsx.zip:	$(BUILD)
 	@rm -fr $(BUILD)/$(TARGET)
 	@mkdir $(BUILD)/$(TARGET)
 	@cp *.3dsx *.smdh *.xml README.md -t $(BUILD)/$(TARGET)
