@@ -155,7 +155,7 @@ $(OUTPUT)-3dsx.zip:	$(BUILD)
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf $(TARGET).zip $(TARGET).cia
+	@rm -fr $(BUILD) $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf $(TARGET)-3dsx.zip $(TARGET).cia
 
 
 #---------------------------------------------------------------------------------
