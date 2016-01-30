@@ -4,6 +4,10 @@
 
 #include <3ds.h>
 
+#ifndef VERSION
+#define VERSION
+#endif
+
 #define ENTRY_SIZE 0x10
 
 enum Mode {
